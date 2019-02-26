@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8' />
+    <title>Display a map</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.css' rel='stylesheet' />
+
+    <script src='js/jquery-3.3.1.min.js'></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id='map'></div>
+    <script>
+        var map = new mapboxgl.Map({
+            container: 'map', // container id
+            style: 'https://maps.tilehosting.com/c/57530131-c1b9-40f3-990b-a4ac7177ba23/styles/positron-cycling/style.json?key=RrAiXeTeoR4I64mRSxk8', // stylesheet location
+            center: [4.3314, 50.6198], // starting position [lng, lat]
+            zoom: 8 // starting zoom
+        });
+
+        var location1 = [4.892177581787109, 51.24864668681026];
+        var marker1 = new mapboxgl.Marker({
+            draggable: true
+        }).setLngLat(location1)
+            .addTo(map);
+        function onDragEnd1() {
+            var lngLat = marker1.getLngLat();
+            location1 = [lngLat.lng, lngLat.lat];
+            getRoute();
+        }
+        marker1.on('dragend', onDragEnd1);
+
+        var location2 = [3.713057041168213, 51.04001772433537];
+        var marker2 = new mapboxgl.Marker({
+            draggable: true
+        }).setLngLat(location2)
+            .addTo(map);
+        function onDragEnd2() {
+            var lngLat = marker2.getLngLat();
+            location2 = [lngLat.lng, lngLat.lat];
+            getRoute();
+        }
+        marker2.on('dragend', onDragEnd2);
+
+        map.on('load', function () {
+            map.addSource("route", {
+                "type": "geojson",
+                "data": {
+                    "type": "FeatureCollection",
+                    "features": []
+                }
+            });
+
+            map.addLayer({
+                "id": "route-non-train",
+                "type": "line",
+                "source": "route",
+                "layout": {
+                    "line-join": "round",
+                    "line-cap": "round"
+                },
+                "paint": {
+                    "line-color": "#999999",
+                    "line-width": 4
+                },
+                "filter": [
+                    "all",
+                    [
+                        "!=",
+                        "profile",
+                        "train"
+                    ]
+                ]
+            });
+
+            map.addLayer({
+                "id": "route-train",
+                "type": "line",
+                "source": "route",
+                "layout": {
+                    "line-join": "round",
+                    "line-cap": "round"
+                },
+                "paint": {
+                    "line-color": "#000000",
+                    "line-width": 4
+                },
+                "filter": [
+                    "all",
+                    [
+                        "==",
+                        "profile",
+                        "train"
+                    ]
+                ]
+            });
+
+            map.addLayer({
+                "id": "route-stops",
+                "type": "circle",
+                "source": "route",
+                "layout": {
+                    "visibility": "visible"
+                },
+                "paint": {
+                    "circle-stroke-width": 2,
+                    "circle-stroke-color": "#000000",
+                    "circle-radius": 4,
+                    "circle-color": "#FFFFFF",
+                    "circle-opacity": 1
+                },
+                "filter": [
+                    "all",
+                    [
+                        "==",
+                        "type",
+                        "stop"
+                    ]
+                ]
+            });
+
+            getRoute();
+        });
+
+        function getRoute() {
+            $.getJSON("https://routing.anyways.eu/api/intermodal/route?profile=pedestrian&" +
+                "location=" + location1[0] + "," + location1[1] + "&" +
+                "location=" + location2[0] + "," + location2[1] + "",
+                function (data) {
+                    const calculatedRoute = map.getSource("route");
+                    if (calculatedRoute) {
+                        // Just set the data
+                        calculatedRoute.setData(data);
+                    }
+                });
+        }
+
+    </script>
+
+</body>
+
+</html>
